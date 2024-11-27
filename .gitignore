@@ -41,6 +41,7 @@ build/Release
 # Dependency directories
 node_modules/
 jspm_packages/
+package-lock.json
 
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/
@@ -74,6 +75,7 @@ web_modules/
 
 # dotenv environment variable files
 .env
+.env.*
 .env.development.local
 .env.test.local
 .env.production.local
@@ -87,9 +89,21 @@ web_modules/
 .next
 out
 
+# OS
+.DS_Store
+Thumbs.db
+
 # Nuxt.js build / generate output
 .nuxt
 dist
+
+
+# Build
+dist/
+build/
+
+# Test
+coverage/
 
 # Gatsby files
 .cache/
@@ -102,7 +116,7 @@ dist
 
 # vuepress v2.x temp and cache directory
 .temp
-.cache
+
 
 # Docusaurus cache and generated files
 .docusaurus
@@ -121,6 +135,12 @@ dist
 
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
 
 # yarn v2
 .yarn/cache
