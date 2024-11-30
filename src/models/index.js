@@ -91,6 +91,26 @@ models.Salary.belongsTo(models.Job, { foreignKey: 'jobId', as: 'job' });
 models.Company.hasMany(models.Interview, { foreignKey: 'companyId', as: 'interviews' });
 models.Interview.belongsTo(models.Company, { foreignKey: 'companyId', as: 'company' });
 
+// 회사-채용공고 관계 (1:N)
+models.Company.hasMany(models.Job, {
+  foreignKey: 'companyId',
+  as: 'jobs'
+});
+models.Job.belongsTo(models.Company, {
+  foreignKey: 'companyId',
+  as: 'company'
+});
+
+// 회사-혜택 관계 (1:N)
+models.Company.hasMany(models.Benefit, {
+  foreignKey: 'companyId',
+  as: 'benefits'
+});
+models.Benefit.belongsTo(models.Company, {
+  foreignKey: 'companyId',
+  as: 'company'
+});
+
 // 에러 처리를 위한 이벤트 리스너 추가
 sequelize.authenticate()
   .then(() => {
