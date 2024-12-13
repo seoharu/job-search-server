@@ -1,40 +1,83 @@
-// models/userSkill.js
 const { DataTypes } = require('sequelize');
+const crypto = require('crypto');
 
 module.exports = (sequelize) => {
-  const UserSkill = sequelize.define('UserSkill', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
-    },
-    level: {
-      type: DataTypes.ENUM('beginner', 'intermediate', 'advanced'), // 기술 숙련도
-      defaultValue: 'beginner'
-    },
-    // 추가 필드
-    yearsOfExperience: {
-      type: DataTypes.FLOAT,    // 해당 기술 경력 년수
-      defaultValue: 0
-    },
-    lastUsed: {
-      type: DataTypes.DATE,     // 마지막으로 사용한 날짜
-      defaultValue: DataTypes.NOW
-    },
-    isMainSkill: {
-      type: DataTypes.BOOLEAN,  // 주요 기술 여부
-      defaultValue: false
-    }
-  }, {
-    timestamps: true,
-    tableName: 'user_skills',
-    indexes: [
-      {
-        name: 'idx_user_skill_level',
-        fields: ['level']
-      }
-    ]
-  });
+ const User = sequelize.define('User', {
+   user_id: {
+     type: DataTypes.STRING(20),
+     primaryKey: true
+   },
+   email: {
+     type: DataTypes.STRING(255),
+     unique: true,
+     allowNull: false,
+     validate: {
+       isEmail: true
+     }
+   },
+   password: {
+     type: DataTypes.STRING(255),
+     allowNull: false,
+     validate: {
+       len: [6, 100]
+     }
+   },
+   name: {
+     type: DataTypes.STRING(50),
+     allowNull: false,
+     validate: {
+       notEmpty: true
+     }
+   },
+   phone: {
+     type: DataTypes.STRING(20),
+     allowNull: true,
+     validate: {
+       is: /^[0-9]{10,11}$/
+     }
+   },
+   resume: {
+     type: DataTypes.TEXT,
+     allowNull: true
+   },
+   status: {
+     type: DataTypes.ENUM('active', 'inactive', 'suspended'),
+     allowNull: false,
+     defaultValue: 'active'
+   },
+   last_login_at: {
+     type: DataTypes.DATE,
+     allowNull: true
+   },
+   created_at: {
+     type: DataTypes.DATE,
+     allowNull: false,
+     defaultValue: DataTypes.NOW
+   },
+   updated_at: {
+     type: DataTypes.DATE,
+     allowNull: false,
+     defaultValue: DataTypes.NOW
+   }
+ }, {
+   timestamps: false,
+   tableName: 'users',
+   indexes: [
+     {
+       name: 'idx_user_email',
+       fields: ['email']
+     }
+   ],
+   hooks: {
+     beforeCreate: async (user) => {
+       const hash = crypto.createHash('sha256')
+         .update(Date.now().toString() + Math.random().toString())
+         .digest('hex');
 
-  return UserSkill;
+       user.user_id = hash.substring(0, 20);
+     }
+   }
+ });
+
+ return User;
 };

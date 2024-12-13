@@ -1,20 +1,34 @@
 const { Sequelize } = require('sequelize');
-const logger = require('../utils/logger');
 require('dotenv').config();
 
-const sequelize = new Sequelize({
-  dialect: 'mysql',
-  host: process.env.DB_HOST,
-  username: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: process.env.DB_NAME,
-  logging: msg => logger.debug(msg),
-  pool: {
-    max: 5,
-    min: 0,
-    acquire: 30000,
-    idle: 10000
+const sequelize = new Sequelize('WSD03',
+  process.env.DB_USER,
+  process.env.DB_PASSWORD,
+  {
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    dialect: 'mysql',
+    logging: console.log,
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 10000
+    }
   }
-});
+);
 
-module.exports = sequelize;
+const testConnection = async () => {
+  try {
+    await sequelize.authenticate();
+    console.log('Database connection successful');
+  } catch (error) {
+    console.error('Database connection failed:', error);
+    process.exit(1);
+  }
+};
+
+module.exports = {
+  sequelize,
+  testConnection
+};

@@ -1,48 +1,112 @@
-// 면접 리뷰 테이블
 const { DataTypes } = require('sequelize');
+const crypto = require('crypto');
 
 module.exports = (sequelize) => {
   const Interview = sequelize.define('Interview', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
+    interview_id: {
+      type: DataTypes.STRING(20),
+      primaryKey: true
     },
-    difficulty: {  // 난이도
+    user_id: {
+      type: DataTypes.STRING(20),
+      allowNull: false
+    },
+    company_id: {
+      type: DataTypes.STRING(20),
+      allowNull: false
+    },
+    job_id: {
+      type: DataTypes.STRING(20),
+      allowNull: false
+    },
+    status: {
+      type: DataTypes.ENUM('scheduled','completed','canceled','no_show'),
+      allowNull: false,
+      defaultValue: 'scheduled'
+    },
+    difficulty: {
       type: DataTypes.INTEGER,
+      allowNull: true,
       validate: {
         min: 1,
         max: 5
       }
     },
-    process: {  // 면접 과정
+    process: {
       type: DataTypes.TEXT,
-      allowNull: false
+      allowNull: false,
+      validate: {
+        notEmpty: true  // 빈 문자열 방지
+      }
     },
-    question: {  // 면접 질문
+    question: {
       type: DataTypes.TEXT,
+      allowNull: false,
+      validate: {
+        notEmpty: true  // 빈 문자열 방지
+      }
+    },
+    result: {
+      type: DataTypes.ENUM('pass','fail','pending'),
+      allowNull: false,
+      defaultValue: 'pending'
+    },
+    experience: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    interview_date: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      validate: {
+        isAfter: new Date().toString()  // 현재 시간 이후인지 검증
+      }
+    },
+    duration: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      validate: {
+        min: 1,  // 최소 1분
+        max: 480  // 최대 8시간
+      }
+    },
+    interview_type: {
+      type: DataTypes.ENUM('online','offline','phone'),
       allowNull: false
     },
-    result: {    // 합격/불합격
-      type: DataTypes.ENUM('pass', 'fail', 'pending'),
-      allowNull: false
+    created_at: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW
     },
-    experience: DataTypes.TEXT,   // 면접 후기
-    interviewDate: DataTypes.DATE,      // 면접 일자
-    duration: DataTypes.INTEGER,        // 면접 시간 (분)
-    interviewType: {                    // 면접 종류
-      type: DataTypes.ENUM('online', 'offline', 'phone'),
-      allowNull: false
+    updated_at: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW
     }
   }, {
-    timestamps: true,
+    timestamps: false,
     tableName: 'interviews',
     indexes: [
       {
         name: 'idx_interview_result',
         fields: ['result']
+      },
+      {
+        name: 'interview',
+        unique: true,
+        fields: ['job_id', 'user_id']
       }
-    ]
+    ],
+    hooks: {
+      beforeCreate: async (interview) => {
+        const hash = crypto.createHash('sha256')
+          .update(Date.now().toString() + Math.random().toString())
+          .digest('hex');
+
+        interview.interview_id = hash.substring(0, 20);
+      }
+    }
   });
 
   return Interview;

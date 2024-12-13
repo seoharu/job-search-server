@@ -1,36 +1,75 @@
-// models/jobSkill.js - 채용공고-기술스택 N:M 관계 매핑
-
 const { DataTypes } = require('sequelize');
+const crypto = require('crypto');
 
 module.exports = (sequelize) => {
-  const JobSkill = sequelize.define('JobSkill', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
-    },
-    level: {                            // 요구 숙련도
-      type: DataTypes.ENUM('beginner', 'intermediate', 'advanced', 'expert'),
-      defaultValue: 'intermediate'
-    },
-    isRequired: {                       // 필수 스킬 여부
-      type: DataTypes.BOOLEAN,
-      defaultValue: true
-    },
-    priority: {                         // 우선순위
-      type: DataTypes.INTEGER,
-      defaultValue: 1
-    }
-  }, {
-    timestamps: true,
-    tableName: 'job_skills',
-    indexes: [
-      {
-        name: 'idx_jobskill_level',
-        fields: ['level']
-      }
-    ]
-  });
+ const JobSkill = sequelize.define('JobSkill', {
+   jobskill_id: {
+     type: DataTypes.STRING(20),
+     primaryKey: true
+   },
+   job_id: {
+     type: DataTypes.STRING(20),
+     allowNull: false
+   },
+   skill_id: {
+     type: DataTypes.STRING(20),
+     allowNull: false
+   },
+   level: {
+     type: DataTypes.ENUM('beginner', 'intermediate', 'advanced', 'expert'),
+     allowNull: false,
+     defaultValue: 'intermediate',
+     validate: {
+       isIn: [['beginner', 'intermediate', 'advanced', 'expert']]
+     }
+   },
+   is_required: {
+     type: DataTypes.BOOLEAN,
+     allowNull: false,
+     defaultValue: true
+   },
+   priority: {
+     type: DataTypes.INTEGER,
+     allowNull: false,
+     defaultValue: 1,
+     validate: {
+       min: 1
+     }
+   },
+   created_at: {
+     type: DataTypes.DATE,
+     allowNull: false,
+     defaultValue: DataTypes.NOW
+   },
+   updated_at: {
+     type: DataTypes.DATE,
+     allowNull: false,
+     defaultValue: DataTypes.NOW
+   }
+ }, {
+   timestamps: false,
+   tableName: 'job_skills',
+   indexes: [
+     {
+       name: 'idx_jobskill_level',
+       fields: ['level']
+     },
+     {
+       name: 'job_skill',
+       unique: true,
+       fields: ['job_id', 'skill_id']
+     }
+   ],
+   hooks: {
+     beforeCreate: async (jobSkill) => {
+       const hash = crypto.createHash('sha256')
+         .update(Date.now().toString() + Math.random().toString())
+         .digest('hex');
 
-  return JobSkill;
+       jobSkill.jobskill_id = hash.substring(0, 20);
+     }
+   }
+ });
+
+ return JobSkill;
 };

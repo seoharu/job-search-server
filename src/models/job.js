@@ -1,35 +1,93 @@
+const { DataTypes } = require('sequelize');
+const crypto = require('crypto');
 
-// models/job.js - 채용공고 관리
 module.exports = (sequelize) => {
-  const Job = sequelize.define('Job', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
-    },
-    title: {
-      type: DataTypes.STRING,
-      allowNull: false     // 공고 제목 필수
-    },
-    description: {
-      type: DataTypes.TEXT,
-      allowNull: false     // 공고 내용 필수
-    },
-    requirements: DataTypes.TEXT,   // 자격요건
-    salary: DataTypes.STRING,       // 급여 정보
-    location: DataTypes.STRING,     // 근무지 위치
-    employmentType: DataTypes.STRING, // 고용형태 (정규직, 계약직 등)
-    experienceLevel: DataTypes.STRING, // 경력 요구사항
-    deadline: DataTypes.DATE,       // 지원 마감일
-    status: {
-      type: DataTypes.ENUM('active', 'closed'),  // 공고 상태
-      defaultValue: 'active'
-    },
-    views: {
-      type: DataTypes.INTEGER,      // 조회수
-      defaultValue: 0
-    }
-  });
+ const Job = sequelize.define('Job', {
+   id: {
+     type: DataTypes.STRING(20),
+     primaryKey: true
+   },
+   company_id: {
+     type: DataTypes.STRING(20),
+     allowNull: false
+   },
+   title: {
+     type: DataTypes.STRING(255),
+     allowNull: false,
+     validate: {
+       notEmpty: true
+     }
+   },
+   description: {
+     type: DataTypes.TEXT,
+     allowNull: false,
+     validate: {
+       notEmpty: true
+     }
+   },
+   requirements: {
+     type: DataTypes.TEXT,
+     allowNull: true
+   },
+   salary: {
+     type: DataTypes.STRING(255),
+     allowNull: true
+   },
+   location: {
+     type: DataTypes.STRING(255),
+     allowNull: true
+   },
+   employment_type: {
+     type: DataTypes.STRING(50),
+     allowNull: true
+   },
+   experience_level: {
+     type: DataTypes.STRING(50),
+     allowNull: true
+   },
+   deadline: {
+     type: DataTypes.DATE,
+     allowNull: false,
+     validate: {
+       isAfter: new Date().toString()
+     }
+   },
+   status: {
+     type: DataTypes.ENUM('active', 'closed'),
+     allowNull: false,
+     defaultValue: 'active'
+   },
+   views: {
+     type: DataTypes.INTEGER,
+     allowNull: false,
+     defaultValue: 0,
+     validate: {
+       min: 0
+     }
+   },
+   created_at: {
+     type: DataTypes.DATE,
+     allowNull: false,
+     defaultValue: DataTypes.NOW
+   },
+   updated_at: {
+     type: DataTypes.DATE,
+     allowNull: false,
+     defaultValue: DataTypes.NOW
+   }
+ }, {
+   timestamps: false,
+   tableName: 'jobs',
+   hooks: {
+     beforeCreate: async (job) => {
+       const hash = crypto.createHash('sha256')
+         .update(Date.now().toString() + Math.random().toString())
+         .digest('hex');
 
-  return Job;
+       job.id = hash.substring(0, 20);
+     }
+   }
+ });
+
+ return Job;
 };
