@@ -1,9 +1,30 @@
+/**
+ * @typedef {Object} ExpressResponse
+ * @property {function(number): ExpressResponse} status - HTTP 상태 코드를 설정하는 함수
+ * @property {function(Object): void} json - JSON 응답을 전송하는 함수
+ */
+
+/**
+* 사용자 관련 컨트롤러
+* @module controllers/user
+*/
+
 const db = require('../models');
 const User = db.User;  // users.js에서 정의된 모델을 가져옴
 const { generateAccessToken } = require('../utils/jwt');
 const logger = require('../utils/logger');
 
-// 로그인
+/**
+ * 사용자 로그인 처리
+ * @async
+ * @param {Object} req - Express Request 객체
+ * @param {Object} req.body - 요청 바디
+ * @param {string} req.body.email - 사용자 이메일
+ * @param {string} req.body.password - 사용자 비밀번호
+ * @param {ExpressResponse} res - Express Response 객체
+ * @returns {Promise<void>} JWT 토큰과 사용자 정보 반환
+ * @throws {Error} 로그인 처리 중 발생한 에러
+ */
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -80,7 +101,19 @@ const login = async (req, res) => {
   }
 };
 
-// 회원가입
+/**
+ * 새로운 사용자 등록
+ * @async
+ * @param {Object} req - Express Request 객체
+ * @param {Object} req.body - 요청 바디
+ * @param {string} req.body.email - 사용자 이메일
+ * @param {string} req.body.password - 사용자 비밀번호 (8자 이상)
+ * @param {string} req.body.name - 사용자 이름
+ * @param {string} [req.body.phone] - 사용자 전화번호 (선택)
+ * @param {Object} res - Express Response 객체
+ * @returns {Promise<void>} 생성된 사용자 정보 반환
+ * @throws {Error} 회원가입 처리 중 발생한 에러
+ */
 const register = async (req, res) => {
   try {
     const { email, password, name, phone } = req.body;
@@ -149,7 +182,16 @@ const register = async (req, res) => {
   }
 };
 
-// 프로필 조회
+/**
+ * 사용자 프로필 정보 조회
+ * @async
+ * @param {Object} req - Express Request 객체
+ * @param {Object} req.user - 인증된 사용자 정보
+ * @param {number} req.user.user_id - 사용자 ID
+ * @param {Object} res - Express Response 객체
+ * @returns {Promise<void>} 사용자 프로필 정보
+ * @throws {Error} 프로필 조회 중 발생한 에러
+ */
 const getMyProfile = async (req, res) => {
   try {
     const user = await User.findByPk(req.user.user_id);
@@ -185,7 +227,20 @@ const getMyProfile = async (req, res) => {
   }
 };
 
-// 프로필 수정
+/**
+ * 사용자 프로필 정보 수정
+ * @async
+ * @param {Object} req - Express Request 객체
+ * @param {Object} req.body - 요청 바디
+ * @param {string} [req.body.name] - 변경할 이름 (선택)
+ * @param {string} [req.body.phone] - 변경할 전화번호 (선택)
+ * @param {string} [req.body.resume] - 변경할 이력서 정보 (선택)
+ * @param {Object} req.user - 인증된 사용자 정보
+ * @param {number} req.user.user_id - 사용자 ID
+ * @param {Object} res - Express Response 객체
+ * @returns {Promise<void>} 수정된 사용자 정보
+ * @throws {Error} 프로필 수정 중 발생한 에러
+ */
 const updateMyProfile = async (req, res) => {
   try {
     const { name, phone, resume } = req.body;

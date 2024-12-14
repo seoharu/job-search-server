@@ -37,6 +37,7 @@
   },
   "devDependencies": {
     "clean-jsdoc-theme": "^4.3.0",
+    "docdash": "^2.0.2",
     "jsdoc": "^4.0.4",
     "nodemon": "^3.1.7",
     "sequelize-cli": "^6.6.2"

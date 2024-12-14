@@ -1,10 +1,45 @@
+/**
+ * @typedef {Object} ExpressResponse
+ * @property {function(number): ExpressResponse} status - HTTP 상태 코드를 설정하는 함수
+ * @property {function(Object): void} json - JSON 응답을 전송하는 함수
+ */
+/**
+* 인증 관련 컨트롤러
+* @module controllers/auth
+*/
+
+/**
+* @typedef {Object} Request
+* @property {Object} body - 요청 바디
+* @property {Object} params - URL 파라미터
+* @property {Object} query - 쿼리 파라미터
+* @property {Object} user - 인증된 사용자 정보
+*/
+
+/**
+* @typedef {Object} Response
+* @property {function} status - HTTP 상태 코드 설정 함수
+* @property {function} json - JSON 응답 전송 함수
+*/
+
 const { generateAccessToken } = require('../utils/jwt');
 const db = require('../models');
 const User = db.User;  // 이렇게 변경
 const { validateEmail, validatePassword } = require('../utils/validators');
 const logger = require('../utils/logger');
 
-// 로그인
+/**
+* 사용자 로그인 처리
+* @async
+* @param {Request} req - Express Request 객체
+* @param {Object} req.body - 요청 바디
+* @param {string} req.body.email - 사용자 이메일
+* @param {string} req.body.password - 사용자 비밀번호
+* @param {Response} res - Express Response 객체
+* @returns {Promise<void>} JWT 토큰과 사용자 정보 반환
+* @throws {Error} 로그인 처리 중 발생한 에러
+*/
+
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -84,7 +119,19 @@ const login = async (req, res) => {
   }
 };
 
-// 회원가입
+/**
+* 새로운 사용자 등록
+* @async
+* @param {Request} req - Express Request 객체
+* @param {Object} req.body - 요청 바디
+* @param {string} req.body.email - 사용자 이메일
+* @param {string} req.body.password - 사용자 비밀번호
+* @param {string} req.body.name - 사용자 이름
+* @param {Response} res - Express Response 객체
+* @returns {Promise<void>} 생성된 사용자 정보 반환
+* @throws {Error} 회원가입 처리 중 발생한 에러
+*/
+
 const register = async (req, res) => {
   try {
     const { email, password, name } = req.body;
@@ -163,7 +210,17 @@ const register = async (req, res) => {
   }
 };
 
-// 사용자 정보 조회
+/**
+* 사용자 프로필 정보 조회
+* @async
+* @param {Request} req - Express Request 객체
+* @param {Object} req.user - 인증된 사용자 정보
+* @param {string} req.user.email - 사용자 이메일
+* @param {Response} res - Express Response 객체
+* @returns {Promise<void>} 사용자 프로필 정보 반환
+* @throws {Error} 프로필 조회 중 발생한 에러
+*/
+
 const getProfile = async (req, res) => {
   try {
     // req.user.email에서 이메일 추출
@@ -201,7 +258,18 @@ const getProfile = async (req, res) => {
 };
 
 
-// 프로필 수정
+/**
+* 사용자 프로필 정보 수정
+* @async
+* @param {Request} req - Express Request 객체
+* @param {Object} req.body - 요청 바디
+* @param {string} req.body.name - 변경할 사용자 이름
+* @param {Object} req.user - 인증된 사용자 정보
+* @param {number} req.user.userId - 사용자 ID
+* @param {Response} res - Express Response 객체
+* @returns {Promise<void>} 수정된 사용자 정보 반환
+* @throws {Error} 프로필 수정 중 발생한 에러
+*/
 const updateProfile = async (req, res) => {
   try {
     const { name } = req.body;
@@ -246,7 +314,16 @@ const updateProfile = async (req, res) => {
   }
 };
 
-// 회원 탈퇴
+/**
+* 회원 탈퇴 처리
+* @async
+* @param {Request} req - Express Request 객체
+* @param {Object} req.user - 인증된 사용자 정보
+* @param {number} req.user.userId - 사용자 ID
+* @param {Response} res - Express Response 객체
+* @returns {Promise<void>} 탈퇴 완료 메시지 반환
+* @throws {Error} 회원 탈퇴 처리 중 발생한 에러
+*/
 const deleteAccount = async (req, res) => {
   try {
     const user = await User.findByPk(req.user.userId);
@@ -275,7 +352,19 @@ const deleteAccount = async (req, res) => {
   }
 };
 
-// 비밀번호 변경
+/**
+* 비밀번호 변경
+* @async
+* @param {Request} req - Express Request 객체
+* @param {Object} req.body - 요청 바디
+* @param {string} req.body.currentPassword - 현재 비밀번호
+* @param {string} req.body.newPassword - 새 비밀번호
+* @param {Object} req.user - 인증된 사용자 정보
+* @param {number} req.user.userId - 사용자 ID
+* @param {Response} res - Express Response 객체
+* @returns {Promise<void>} 비밀번호 변경 완료 메시지 반환
+* @throws {Error} 비밀번호 변경 중 발생한 에러
+*/
 const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;

@@ -1,9 +1,25 @@
+/**
+ * @typedef {Object} ExpressResponse
+ * @property {function(number): ExpressResponse} status - HTTP 상태 코드를 설정하는 함수
+ * @property {function(Object): void} json - JSON 응답을 전송하는 함수
+ */
+/**
+* 채용공고 관련 컨트롤러
+* @module controllers/job
+*/
+
 const db = require('../models');
 const Job = db.Job;
 const { Op } = require('sequelize');
 const logger = require('../utils/logger');
 
-// 성공 응답 처리
+/**
+ * 성공 응답 처리 유틸리티 함수
+ * @private
+ * @param {ExpressResponse} res - Express Response 객체
+ * @param {Object} data - 응답에 포함할 데이터
+ */
+
 const handleSuccess = (res, data) => {
   res.status(200).json({
     status: "success",
@@ -11,17 +27,37 @@ const handleSuccess = (res, data) => {
   });
 };
 
-// 에러 응답 처리
-const handleError = (res, message, code) => {
+/**
+ * 에러 응답 처리 유틸리티 함수
+ * @private
+ * @param {ExpressResponse} res - Express Response 객체
+ * @param {string} message - 에러 메시지
+ * @param {string} code - 에러 코드
+ * @param {number} [statusCode=500] - HTTP 상태 코드
+ */
+
+const handleError = (res, message, code, statusCode = 500) => {
   logger.error(message);
-  res.status(500).json({
+  res.status(statusCode).json({
     status: "error",
     message: message,
     code: code
   });
 };
 
-// 공통 where 절 생성 로직
+/**
+* 검색 조건을 위한 where 절 생성
+* @private
+* @param {Object} query - 요청 쿼리 파라미터
+* @param {string} [query.search] - 검색 키워드
+* @param {string} [query.location] - 위치 필터
+* @param {string} [query.experience] - 경력 필터
+* @param {number} [query.salary_min] - 최소 급여
+* @param {number} [query.salary_max] - 최대 급여
+* @param {string} [query.employment_type] - 고용 형태
+* @param {string|string[]} [query.tech_stack] - 기술 스택
+* @returns {Object} Sequelize where 절 객체
+*/
 const buildWhereClause = (query) => {
   const { search, location, experience, salary_min, salary_max, employment_type, tech_stack } = query;
   const whereClause = { status: 'active' }; // 활성화된 공고만 검색
@@ -67,7 +103,14 @@ const buildWhereClause = (query) => {
   return whereClause;
 };
 
-// 채용 공고 목록 조회
+
+/**
+ * 특정 Job 조회
+ * @async
+ * @param {Object} req - Express Request 객체
+ * @param {ExpressResponse} res - Express Response 객체
+ * @returns {Promise<void>}
+ */
 const getJobs = async (req, res) => {
   try {
     const {
@@ -114,7 +157,15 @@ const getJobs = async (req, res) => {
   }
 };
 
-// 채용 공고 상세 조회
+/**
+ * 채용공고 상세 정보 조회
+ * @async
+ * @param {Object} req - Express Request 객체
+ * @param {Object} req.params - URL 파라미터
+ * @param {number} req.params.id - 조회할 채용공고 ID
+ * @param {ExpressResponse} res - Express Response 객체
+ * @returns {Promise<void>}
+ */
 const getJobById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -162,6 +213,10 @@ const getJobById = async (req, res) => {
   } catch (error) {
     handleError(res, '채용 공고 상세 조회 중 오류가 발생했습니다', 'JOB_DETAIL_ERROR', error);
   }
+  if (!job) {
+    return handleError(res, '채용 공고를 찾을 수 없습니다', 'JOB_NOT_FOUND', 404);
+  }
+
 };
 
 module.exports = {

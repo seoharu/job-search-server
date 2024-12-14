@@ -1,8 +1,49 @@
-// controllers/interview.controller.js
+/**
+ * @typedef {Object} ExpressResponse
+ * @property {function(number): ExpressResponse} status - HTTP 상태 코드를 설정하는 함수
+ * @property {function(Object): void} json - JSON 응답을 전송하는 함수
+ */
+/**
+* 면접 관련 컨트롤러
+* @module controllers/interview
+*/
+
+
+/**
+* @typedef {Object} Request
+* @property {Object} body - 요청 바디
+* @property {Object} params - URL 파라미터
+* @property {Object} query - 쿼리 파라미터
+* @property {Object} user - 인증된 사용자 정보
+*/
+
+/**
+* @typedef {Object} Response
+* @property {function} status - HTTP 상태 코드 설정 함수
+* @property {function} json - JSON 응답 전송 함수
+*/
+
 const { Interview, Job } = require('../models');
 const logger = require('../utils/logger');
 
-// 면접 생성
+/**
+* 새로운 면접 일정 생성
+* @async
+* @param {Request} req - Express Request 객체
+* @param {Object} req.body - 요청 바디
+* @param {number} req.body.company_id - 회사 ID
+* @param {number} req.body.job_id - 채용공고 ID
+* @param {string} req.body.process - 면접 프로세스 단계
+* @param {string} [req.body.question] - 면접 질문
+* @param {Date} req.body.interview_date - 면접 날짜
+* @param {string} req.body.interview_type - 면접 유형
+* @param {number} req.body.duration - 면접 소요 시간(분)
+* @param {Object} req.user - 인증된 사용자 정보
+* @param {number} req.user.id - 사용자 ID
+* @param {Response} res - Express Response 객체
+* @returns {Promise<void>} 생성된 면접 정보
+* @throws {Error} 면접 생성 중 발생한 에러
+*/
 const createInterview = async (req, res) => {
   try {
     const {
@@ -87,7 +128,21 @@ const createInterview = async (req, res) => {
   }
 };
 
-// 면접 목록 조회
+/**
+* 사용자의 면접 목록 조회
+* @async
+* @param {Request} req - Express Request 객체
+* @param {Object} req.query - 쿼리 파라미터
+* @param {string} [req.query.status] - 면접 상태 필터
+* @param {string} [req.query.result] - 면접 결과 필터
+* @param {number} [req.query.page=1] - 페이지 번호
+* @param {number} [req.query.limit=10] - 페이지당 항목 수
+* @param {Object} req.user - 인증된 사용자 정보
+* @param {number} req.user.id - 사용자 ID
+* @param {Response} res - Express Response 객체
+* @returns {Promise<void>} 면접 목록과 페이지네이션 정보
+* @throws {Error} 면접 목록 조회 중 발생한 에러
+*/
 const getMyInterviews = async (req, res) => {
   try {
     const { status, result, page = 1, limit = 10 } = req.query;
@@ -130,7 +185,18 @@ const getMyInterviews = async (req, res) => {
   }
 };
 
-// 면접 상세 조회
+/**
+* 면접 상세 정보 조회
+* @async
+* @param {Request} req - Express Request 객체
+* @param {Object} req.params - URL 파라미터
+* @param {number} req.params.interview_id - 조회할 면접 ID
+* @param {Object} req.user - 인증된 사용자 정보
+* @param {number} req.user.user_id - 사용자 ID
+* @param {Response} res - Express Response 객체
+* @returns {Promise<void>} 면접 상세 정보
+* @throws {Error} 면접 상세 정보 조회 중 발생한 에러
+*/
 const getInterviewDetail = async (req, res) => {
   try {
     const { interview_id } = req.params;
@@ -166,7 +232,22 @@ const getInterviewDetail = async (req, res) => {
   }
 };
 
-// 면접 결과 및 경험 업데이트
+/**
+* 면접 결과 및 경험 업데이트
+* @async
+* @param {Request} req - Express Request 객체
+* @param {Object} req.params - URL 파라미터
+* @param {number} req.params.interview_id - 업데이트할 면접 ID
+* @param {Object} req.body - 요청 바디
+* @param {number} [req.body.difficulty] - 면접 난이도 (1-5)
+* @param {string} [req.body.result] - 면접 결과
+* @param {string} [req.body.experience] - 면접 경험
+* @param {Object} req.user - 인증된 사용자 정보
+* @param {number} req.user.user_id - 사용자 ID
+* @param {Response} res - Express Response 객체
+* @returns {Promise<void>} 업데이트된 면접 정보
+* @throws {Error} 면접 결과 업데이트 중 발생한 에러
+*/
 const updateInterviewResult = async (req, res) => {
   try {
     const { interview_id } = req.params;
@@ -225,7 +306,20 @@ const updateInterviewResult = async (req, res) => {
   }
 };
 
-// 면접 상태 업데이트
+/**
+* 면접 상태 업데이트
+* @async
+* @param {Request} req - Express Request 객체
+* @param {Object} req.params - URL 파라미터
+* @param {number} req.params.interview_id - 업데이트할 면접 ID
+* @param {Object} req.body - 요청 바디
+* @param {string} req.body.status - 변경할 면접 상태
+* @param {Object} req.user - 인증된 사용자 정보
+* @param {number} req.user.user_id - 사용자 ID
+* @param {Response} res - Express Response 객체
+* @returns {Promise<void>} 업데이트된 면접 정보
+* @throws {Error} 면접 상태 업데이트 중 발생한 에러
+*/
 const updateInterviewStatus = async (req, res) => {
   try {
     const { interview_id } = req.params;

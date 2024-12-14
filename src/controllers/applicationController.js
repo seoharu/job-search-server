@@ -1,5 +1,37 @@
+
+/**
+ * @typedef {Object} Request
+ * @property {Object} body - 요청 바디
+ * @property {Object} params - URL 파라미터
+ * @property {Object} query - 쿼리 파라미터
+ * @property {Object} user - 인증된 사용자 정보
+ * @property {string} user.email - 사용자 이메일
+ * @property {number} user.user_id - 사용자 ID
+ */
+
+/**
+ * @typedef {Object} ExpressResponse
+ * @property {function(number): ExpressResponse} status - HTTP 상태 코드를 설정하는 함수
+ * @property {function(Object): void} json - JSON 응답을 전송하는 함수
+ */
+
 const { Application, Job, User } = require('../models');
 const logger = require('../utils/logger');
+
+/**
+ * 채용공고 지원하기
+ * @async
+ * @param {Request} req - Express Request 객체
+ * @param {Object} req.body - 요청 바디
+ * @param {number} req.body.job_id - 지원할 채용공고 ID
+ * @param {string} req.body.resume_version - 이력서 버전
+ * @param {string} [req.body.cover_letter] - 자기소개서 (선택)
+ * @param {Object} req.user - 인증된 사용자 정보
+ * @param {string} req.user.email - 사용자 이메일
+ * @param {Response} res - Express Response 객체
+ * @returns {Promise<void>}
+ * @throws {Error} 지원서 생성 중 발생한 에러
+ */
 
 // 지원하기
 const applyForJob = async (req, res) => {
@@ -78,6 +110,21 @@ const applyForJob = async (req, res) => {
   }
 };
 
+/**
+ * 사용자의 지원 내역 조회
+ * @async
+ * @param {Request} req - Express Request 객체
+ * @param {Object} req.query - 쿼리 파라미터
+ * @param {string} [req.query.status] - 지원 상태 필터 (선택)
+ * @param {number} [req.query.page=1] - 페이지 번호
+ * @param {number} [req.query.limit=10] - 페이지당 항목 수
+ * @param {Object} req.user - 인증된 사용자 정보
+ * @param {string} req.user.email - 사용자 이메일
+ * @param {Response} res - Express Response 객체
+ * @returns {Promise<void>}
+ * @throws {Error} 지원 내역 조회 중 발생한 에러
+ */
+
 // 지원 내역 조회
 const getMyApplications = async (req, res) => {
   try {
@@ -132,6 +179,17 @@ const getMyApplications = async (req, res) => {
   }
 };
 
+/**
+ * 지원서 상세 정보 조회
+ * @async
+ * @param {Request} req - Express Request 객체
+ * @param {Object} req.params - URL 파라미터
+ * @param {number} req.params.application_id - 조회할 지원서 ID
+ * @param {Response} res - Express Response 객체
+ * @returns {Promise<void>}
+ * @throws {Error} 지원서 상세 조회 중 발생한 에러
+ */
+
 
 // 지원서 상세 조회
 const getApplicationDetail = async (req, res) => {
@@ -181,7 +239,18 @@ const getApplicationDetail = async (req, res) => {
   }
 };
 
-// 지원 취소 (상태를 rejected로 변경)
+/**
+ * 지원 취소 (상태를 rejected로 변경)
+ * @async
+ * @param {Request} req - Express Request 객체
+ * @param {Object} req.params - URL 파라미터
+ * @param {number} req.params.application_id - 취소할 지원서 ID
+ * @param {Object} req.user - 인증된 사용자 정보
+ * @param {number} req.user.user_id - 사용자 ID
+ * @param {Response} res - Express Response 객체
+ * @returns {Promise<void>}
+ * @throws {Error} 지원 취소 중 발생한 에러
+ */
 const cancelApplication = async (req, res) => {
   try {
     const { application_id } = req.params;

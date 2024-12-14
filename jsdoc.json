@@ -4,7 +4,7 @@
     "dictionaries": ["jsdoc", "closure"]
   },
   "source": {
-    "include": ["src"],
+    "include": ["src/controllers"],
     "exclude": [
       "node_modules",
       "dist",
@@ -20,11 +20,10 @@
     "plugins/summarize"
   ],
   "opts": {
-    "template": "node_modules/clean-jsdoc-theme",
     "encoding": "utf8",
-    "destination": "./docs/",
+    "destination": "./docs",
+    "template": "node_modules/docdash",
     "recurse": true,
-    "verbose": true,
     "readme": "./README.md"
   },
   "templates": {
