@@ -74,19 +74,19 @@ module.exports = (sequelize) => {
       type: DataTypes.ENUM('online','offline','phone'),
       allowNull: false
     },
-    created_at: {
+    createdAt: {
       type: DataTypes.DATE,
       allowNull: false,
       defaultValue: DataTypes.NOW
     },
-    updated_at: {
+    updatedAt: {
       type: DataTypes.DATE,
       allowNull: false,
       defaultValue: DataTypes.NOW
     }
   }, {
     timestamps: false,
-    tableName: 'interviews',
+    tableName: 'Interviews',
     indexes: [
       {
         name: 'idx_interview_result',
@@ -108,6 +108,11 @@ module.exports = (sequelize) => {
       }
     }
   });
+
+
+  Interview.associate = (models) => {
+    Interview.belongsTo(models.Job, { foreignKey: 'job_id', as: 'job' }); // 관계 설정
+  };
 
   return Interview;
 };

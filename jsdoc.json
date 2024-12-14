@@ -1,0 +1,117 @@
+{
+  "tags": {
+    "allowUnknownTags": true,
+    "dictionaries": ["jsdoc", "closure"]
+  },
+  "source": {
+    "include": ["src"],
+    "exclude": [
+      "node_modules",
+      "dist",
+      "src/tests",
+      "src/**/*.test.js",
+      "src/**/*.spec.js"
+    ],
+    "includePattern": ".+\\.js(doc|x)?$",
+    "excludePattern": "(^|\\/|\\\\)_"
+  },
+  "plugins": [
+    "plugins/markdown",
+    "plugins/summarize"
+  ],
+  "opts": {
+    "template": "node_modules/clean-jsdoc-theme",
+    "encoding": "utf8",
+    "destination": "./docs/",
+    "recurse": true,
+    "verbose": true,
+    "readme": "./README.md"
+  },
+  "templates": {
+    "cleverLinks": false,
+    "monospaceLinks": false,
+    "default": {
+      "outputSourceFiles": true,
+      "includeDate": false,
+      "useLongnameInNav": true,
+      "layoutFile": "templates/layout.tmpl"
+    },
+    "clean-jsdoc-theme": {
+      "name": "구인구직 백엔드 API",
+      "title": "구인구직 백엔드 API 문서",
+      "footer": "Created by Your Name",
+      "codepen": false,
+      "openGraph": {
+        "title": "구인구직 백엔드 API 문서",
+        "type": "website",
+        "site_name": "API Documentation"
+      },
+      "meta": {
+        "title": "구인구직 백엔드 API 문서",
+        "description": "사람인 데이터 기반 구인구직 백엔드 API 문서",
+        "keyword": "api, documentation, nodejs, express"
+      },
+      "search": true,
+      "collapse": true,
+      "menu": [
+        {
+          "title": "Github",
+          "link": "https://github.com/yourusername/yourproject",
+          "target": "_blank"
+        }
+      ],
+      "default_theme": "dark",
+      "base_url": "",
+      "include_css": [],
+      "include_js": []
+    }
+  },
+  "markdown": {
+    "hardwrap": false,
+    "idInHeadings": true
+  },
+  "docdash": {
+    "static": false,
+    "sort": true,
+    "sectionOrder": [
+      "Classes",
+      "Modules",
+      "Externals",
+      "Events",
+      "Namespaces",
+      "Mixins",
+      "Tutorials",
+      "Interfaces"
+    ],
+    "disqus": "",
+    "openGraph": {
+      "title": "구인구직 백엔드 API 문서",
+      "type": "website",
+      "image": "",
+      "site_name": "API Documentation",
+      "url": ""
+    },
+    "meta": {
+      "title": "구인구직 백엔드 API 문서",
+      "description": "사람인 데이터 기반 구인구직 백엔드 API 문서",
+      "keyword": "api, documentation, nodejs, express"
+    },
+    "search": true,
+    "collapse": true,
+    "wrap": true,
+    "typedefs": true,
+    "navLevel": 3,
+    "private": true,
+    "removeQuotes": "none",
+    "scripts": [],
+    "styles": [],
+    "menu": {
+      "Github": {
+        "href": "https://github.com/seoharu/job-search-server",
+        "target": "_blank",
+        "class": "menu-item",
+        "id": "github_link"
+      }
+    }
+  }
+}

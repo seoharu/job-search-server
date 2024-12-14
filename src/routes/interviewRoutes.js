@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const interviewController = require('../controllers/interview.controller');
-const auth = require('../middlewares/auth');
+const interviewController = require('../controllers/interviewController');
+const auth = require('../middlewares/auth.middleware');
 
 // 모든 라우트에 인증 필요
 router.use(auth);

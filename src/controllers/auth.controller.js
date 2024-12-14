@@ -1,5 +1,6 @@
 const { generateAccessToken } = require('../utils/jwt');
-const User = require('../models/user.model');
+const db = require('../models');
+const User = db.User;  // 이렇게 변경
 const { validateEmail, validatePassword } = require('../utils/validators');
 const logger = require('../utils/logger');
 
@@ -47,8 +48,18 @@ const login = async (req, res) => {
     }
 
     // JWT 토큰 생성
-    const accessToken = generateAccessToken(user);
+    // JWT 토큰 생성 (순수 객체로 변환)
+    const userPayload = {
+      id: user.dataValues.user_id,
+      email: user.dataValues.email,
+      name: user.dataValues.name,
+      status: user.dataValues.status
+    };
 
+
+    const accessToken = generateAccessToken(userPayload);
+
+    console.log(accessToken);
     // 로그인 성공 로그
     logger.info(`User logged in successfully: ${user.email}`);
 
@@ -106,13 +117,18 @@ const register = async (req, res) => {
     }
 
     // 이메일 중복 체크
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({
+        where: {
+            email: email
+        }
+    });
+
     if (existingUser) {
-      return res.status(400).json({
-        status: 'error',
-        message: '이미 존재하는 이메일입니다',
-        code: 'EMAIL_EXISTS'
-      });
+        return res.status(400).json({
+            status: 'error',
+            message: '이미 존재하는 이메일입니다',
+            code: 'EMAIL_EXISTS'
+        });
     }
 
     // 비밀번호 암호화
@@ -150,7 +166,10 @@ const register = async (req, res) => {
 // 사용자 정보 조회
 const getProfile = async (req, res) => {
   try {
-    const user = await User.findByPk(req.user.userId);
+    // req.user.email에서 이메일 추출
+    const user = await User.findOne({ where: { email: req.user.email } });
+
+    // 사용자 존재 여부 확인
     if (!user) {
       return res.status(404).json({
         status: 'error',
@@ -159,6 +178,7 @@ const getProfile = async (req, res) => {
       });
     }
 
+    // 성공적으로 사용자 정보 반환
     res.json({
       status: 'success',
       data: {
@@ -170,6 +190,7 @@ const getProfile = async (req, res) => {
       }
     });
   } catch (error) {
+    // 에러 처리
     logger.error('Profile retrieval error:', error);
     res.status(500).json({
       status: 'error',
@@ -178,6 +199,7 @@ const getProfile = async (req, res) => {
     });
   }
 };
+
 
 // 프로필 수정
 const updateProfile = async (req, res) => {

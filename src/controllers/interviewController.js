@@ -15,10 +15,20 @@ const createInterview = async (req, res) => {
       duration
     } = req.body;
 
-    const user_id = req.user.user_id;
+    // duration 값이 문자열일 경우 숫자로 변환
+    const parsedDuration = parseInt(duration, 10);
+    if (isNaN(parsedDuration)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Duration must be a valid number',
+        code: 'INVALID_DURATION',
+      });
+    }
+
+    const user_id = req.user.id;
 
     // 필수 필드 검증
-    if (!company_id || !job_id || !process || !question || !interview_date || !interview_type) {
+    if (!company_id || !job_id || !process || !interview_date || !interview_type) {
       return res.status(400).json({
         status: 'error',
         message: '필수 항목을 모두 입력해주세요',
@@ -56,7 +66,7 @@ const createInterview = async (req, res) => {
       question,
       interview_date,
       interview_type,
-      duration,
+      duration: parsedDuration, // 숫자로 변환된 값 저장,
       status: 'scheduled',
       result: 'pending'
     });
@@ -81,7 +91,7 @@ const createInterview = async (req, res) => {
 const getMyInterviews = async (req, res) => {
   try {
     const { status, result, page = 1, limit = 10 } = req.query;
-    const user_id = req.user.user_id;
+    const user_id = req.user.id;
 
     const where = { user_id };
     if (status) where.status = status;
@@ -91,7 +101,8 @@ const getMyInterviews = async (req, res) => {
       where,
       include: [{
         model: Job,
-        attributes: ['title', 'company', 'location']
+        as: 'job', // 관계에서 설정한 alias 사용
+        attributes: ['title', 'company_id']
       }],
       limit: parseInt(limit),
       offset: (page - 1) * parseInt(limit),

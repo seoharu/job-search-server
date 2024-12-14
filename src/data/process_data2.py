@@ -403,7 +403,7 @@ class DataProcessor:
                         query = text("""
                             INSERT INTO Skills (
                                 jobskill_id, user_id, name, category, description,
-                                created_at, updated_at, idx_skill_name, skill_id,
+                                createdAt, updated_at, idx_skill_name, skill_id,
                                 search_keyword
                             ) VALUES (
                                     :jobskill_id, NULL, :name, 'technical', :description,

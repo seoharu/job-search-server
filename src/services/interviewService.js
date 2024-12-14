@@ -27,7 +27,7 @@ class InterviewService {
         ...data,
         status: 'scheduled',
         result: 'pending',
-        created_at: new Date(),
+        createdAt: new Date(),
         updated_at: new Date()
       });
 

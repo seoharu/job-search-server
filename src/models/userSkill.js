@@ -1,83 +1,67 @@
+// models/userskill.js
 const { DataTypes } = require('sequelize');
 const crypto = require('crypto');
 
 module.exports = (sequelize) => {
- const User = sequelize.define('User', {
-   user_id: {
-     type: DataTypes.STRING(20),
-     primaryKey: true
-   },
-   email: {
-     type: DataTypes.STRING(255),
-     unique: true,
-     allowNull: false,
-     validate: {
-       isEmail: true
-     }
-   },
-   password: {
-     type: DataTypes.STRING(255),
-     allowNull: false,
-     validate: {
-       len: [6, 100]
-     }
-   },
-   name: {
-     type: DataTypes.STRING(50),
-     allowNull: false,
-     validate: {
-       notEmpty: true
-     }
-   },
-   phone: {
-     type: DataTypes.STRING(20),
-     allowNull: true,
-     validate: {
-       is: /^[0-9]{10,11}$/
-     }
-   },
-   resume: {
-     type: DataTypes.TEXT,
-     allowNull: true
-   },
-   status: {
-     type: DataTypes.ENUM('active', 'inactive', 'suspended'),
-     allowNull: false,
-     defaultValue: 'active'
-   },
-   last_login_at: {
-     type: DataTypes.DATE,
-     allowNull: true
-   },
-   created_at: {
-     type: DataTypes.DATE,
-     allowNull: false,
-     defaultValue: DataTypes.NOW
-   },
-   updated_at: {
-     type: DataTypes.DATE,
-     allowNull: false,
-     defaultValue: DataTypes.NOW
-   }
- }, {
-   timestamps: false,
-   tableName: 'users',
-   indexes: [
-     {
-       name: 'idx_user_email',
-       fields: ['email']
-     }
-   ],
-   hooks: {
-     beforeCreate: async (user) => {
-       const hash = crypto.createHash('sha256')
-         .update(Date.now().toString() + Math.random().toString())
-         .digest('hex');
+  const UserSkill = sequelize.define('UserSkill', {
+    userskill_id: {
+      type: DataTypes.STRING(20),
+      primaryKey: true
+    },
+    user_id: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      references: {
+        model: 'users',
+        key: 'user_id'
+      }
+    },
+    skill_name: {
+      type: DataTypes.STRING(100),
+      allowNull: false
+    },
+    skill_level: {
+      type: DataTypes.ENUM('beginner', 'intermediate', 'advanced', 'expert'),
+      allowNull: false,
+      defaultValue: 'beginner'
+    },
+    experience_years: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    is_main: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW
+    },
+    updated_at: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW
+    }
+  }, {
+    timestamps: false,
+    tableName: 'user_skills',
+    indexes: [
+      {
+        name: 'idx_userskill_user',
+        fields: ['user_id']
+      }
+    ],
+    hooks: {
+      beforeCreate: async (userSkill) => {
+        const hash = crypto.createHash('sha256')
+          .update(Date.now().toString() + Math.random().toString())
+          .digest('hex');
+        userSkill.userskill_id = hash.substring(0, 20);
+      }
+    }
+  });
 
-       user.user_id = hash.substring(0, 20);
-     }
-   }
- });
-
- return User;
+  return UserSkill;
 };

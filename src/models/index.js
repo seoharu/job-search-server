@@ -1,109 +1,78 @@
 const { Sequelize } = require('sequelize');
-const config = require('../config/database.py');
 
-const sequelize = new Sequelize(config);
-
-const models = {
-  User: require('./users')(sequelize),
-  Company: require('./company')(sequelize),
-  Job: require('./job')(sequelize),
-  Application: require('./application')(sequelize),
-  Bookmark: require('./bookmark')(sequelize),
-  Skill: require('./skill')(sequelize),
-  JobSkill: require('./jobSkill')(sequelize),
-  UserSkill: require('./userSkill')(sequelize),
-  Benefit: require('./benefit')(sequelize),
-  Interview: require('./interview')(sequelize),
-  JobStat: require('./jobStat')(sequelize),
-  Salary: require('./salary')(sequelize)
+// 데이터베이스 연결 설정
+const config = {
+  username: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: "WSD03",
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT || '10013',
+  dialect: "mysql", // MySQL 사용
+  pool: {
+    max: 5,
+    min: 0,
+    acquire: 30000,
+    idle: 10000,
+  },
 };
 
-// 사용자-지원 관계 (1:N)
-models.User.hasMany(models.Application, { foreignKey: 'user_id', as: 'applications' });
-models.Application.belongsTo(models.User, { foreignKey: 'user_id', as: 'user' });
+// Sequelize 인스턴스 생성
+const sequelize = new Sequelize(
+  config.database,
+  config.username,
+  config.password,
+  {
+    host: config.host,
+    port: config.port,
+    dialect: config.dialect,
+    pool: config.pool,
+  }
+);
 
-// 채용공고-지원 관계 (1:N)
-models.Job.hasMany(models.Application, { foreignKey: 'job_id', as: 'applications' });
-models.Application.belongsTo(models.Job, { foreignKey: 'job_id', as: 'job' });
+// 모델 불러오기
+const User = require('./users')(sequelize);
+const Job = require('./job')(sequelize);
+const Application = require('./application')(sequelize);
+const Interview = require('./interview')(sequelize);
+const Bookmark = require('./bookmark')(sequelize);
+const UserSkill = require('./userSkill')(sequelize);
+const Company = require('./company')(sequelize);
 
-// 회사-채용공고 관계 (1:N)
-models.Company.hasMany(models.Job, { foreignKey: 'company_id', as: 'jobs' });
-models.Job.belongsTo(models.Company, { foreignKey: 'company_id', as: 'company' });
+// 관계 설정
+User.hasMany(Application, { foreignKey: 'user_id', sourceKey: 'user_id' });
+Application.belongsTo(User, { foreignKey: 'user_id', targetKey: 'user_id' });
 
-// 사용자-북마크-채용공고 관계 (N:M)
-models.User.belongsToMany(models.Job, {
-  through: models.Bookmark,
-  foreignKey: 'user_id',
-  as: 'bookmarked_jobs'
-});
-models.Job.belongsToMany(models.User, {
-  through: models.Bookmark,
-  foreignKey: 'job_id',
-  as: 'bookmarked_by_users'
-});
+User.hasMany(Bookmark, { foreignKey: 'user_id', sourceKey: 'user_id' });
+Bookmark.belongsTo(User, { foreignKey: 'user_id', targetKey: 'user_id' });
 
-// 채용공고-기술스택 관계 (N:M)
-models.Job.belongsToMany(models.Skill, {
-  through: models.JobSkill,
-  foreignKey: 'job_id',
-  as: 'skills'
-});
-models.Skill.belongsToMany(models.Job, {
-  through: models.JobSkill,
-  foreignKey: 'skill_id',
-  as: 'jobs'
-});
+Job.hasMany(Application, { foreignKey: 'job_id', sourceKey: 'job_id', as: 'interviews' });
+Application.belongsTo(Job, { foreignKey: 'job_id', targetKey: 'job_id' });
 
-// 사용자-기술스택 관계 (N:M)
-models.User.belongsToMany(models.Skill, {
-  through: models.UserSkill,
-  foreignKey: 'user_id',
-  as: 'skills'
-});
-models.Skill.belongsToMany(models.User, {
-  through: models.UserSkill,
-  foreignKey: 'skill_id',
-  as: 'users'
-});
+Interview.belongsTo(Job, { foreignKey: 'job_id', targetKey: 'job_id', as: 'job' });
+Interview.belongsTo(User, { foreignKey: 'user_id', targetKey: 'user_id' }); // User와 Interview 관계 설정
 
-// 채용공고-혜택 관계 (1:N)
-models.Job.hasMany(models.Benefit, { foreignKey: 'job_id', as: 'benefits' });
-models.Benefit.belongsTo(models.Job, { foreignKey: 'job_id', as: 'job' });
+// 관계 설정
+User.hasMany(UserSkill);
+UserSkill.belongsTo(User);
 
-// 채용공고-면접 관계 (1:N)
-models.Job.hasMany(models.Interview, { foreignKey: 'job_id', as: 'interviews' });
-models.Interview.belongsTo(models.Job, { foreignKey: 'job_id', as: 'job' });
+Interview.belongsTo(User, { foreignKey: 'user_id', targetKey: 'user_id' }); // User와 Interview 관계 설정
 
-// 사용자-면접 관계 (1:N)
-models.User.hasMany(models.Interview, { foreignKey: 'user_id', as: 'interviews' });
-models.Interview.belongsTo(models.User, { foreignKey: 'user_id', as: 'interviewer' });
+// Company와 Job 관계 설정
+Company.hasMany(Job, { foreignKey: 'company_id', sourceKey: 'company_id', as: 'jobs' });
+Job.belongsTo(Company, { foreignKey: 'company_id', targetKey: 'company_id', as: 'Company' });
 
-// 채용공고-통계 관계 (1:1)
-models.Job.hasOne(models.JobStat, { foreignKey: 'job_id', as: 'statistics' });
-models.JobStat.belongsTo(models.Job, { foreignKey: 'job_id', as: 'job' });
 
-// 채용공고-급여 관계 (1:1)
-models.Job.hasOne(models.Salary, { foreignKey: 'job_num', as: 'salary_info' });
-models.Salary.belongsTo(models.Job, { foreignKey: 'job_num', as: 'job' });
 
-// 회사-면접 관계 (1:N)
-models.Company.hasMany(models.Interview, { foreignKey: 'company_id', as: 'interviews' });
-models.Interview.belongsTo(models.Company, { foreignKey: 'company_id', as: 'company' });
-
-// 회사-혜택 관계 (1:N)
-models.Company.hasMany(models.Benefit, { foreignKey: 'company_id', as: 'benefits' });
-models.Benefit.belongsTo(models.Company, { foreignKey: 'company_id', as: 'company' });
-
-sequelize.authenticate()
-  .then(() => {
-    console.log('Database connection established successfully.');
-  })
-  .catch(err => {
-    console.error('Unable to connect to the connecting.py:', err);
-  });
-
-module.exports = {
+// DB 객체 생성
+const db = {
   sequelize,
   Sequelize,
-  ...models
+  User,
+  Job,
+  Company,
+  Application,
+  Interview,
+  Bookmark,
 };
+
+module.exports = db;

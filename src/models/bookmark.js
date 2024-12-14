@@ -24,23 +24,23 @@ module.exports = (sequelize) => {
      allowNull: false,
      defaultValue: false
    },
-   created_at: {
+   createdAt: {
      type: DataTypes.DATE,
      allowNull: false,
      defaultValue: DataTypes.NOW
    },
-   updated_at: {
+   updatedAt: {
      type: DataTypes.DATE,
      allowNull: false,
      defaultValue: DataTypes.NOW
    }
  }, {
    timestamps: false,
-   tableName: 'bookmarks',
+   tableName: 'Bookmarks',
    indexes: [
      {
        name: 'idx_bookmark_date',
-       fields: ['created_at']
+       fields: ['createdAt']
      },
      {
        name: 'user_job',

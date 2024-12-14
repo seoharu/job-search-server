@@ -24,7 +24,7 @@ class BookmarkService {
         job_id,
         note,
         notification,
-        created_at: new Date(),
+        createdAt: new Date(),
         updated_at: new Date()
       });
 
@@ -32,7 +32,7 @@ class BookmarkService {
       return {
         bookmarked: true,
         bookmark_id: bookmark.bookmark_id,
-        created_at: bookmark.created_at
+        createdAt: bookmark.createdAt
       };
     } catch (error) {
       logger.error('Bookmark toggle error:', error);
@@ -51,7 +51,7 @@ class BookmarkService {
         }],
         limit: parseInt(limit),
         offset: (page - 1) * parseInt(limit),
-        order: [['created_at', 'DESC']]
+        order: [['createdAt', 'DESC']]
       });
 
       return {

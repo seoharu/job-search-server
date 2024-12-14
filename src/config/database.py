@@ -94,16 +94,16 @@ def insert_company(cursor, row):
             'industry': clean_value(row['job_group']) or 'Not specified',
             'description': description,
             'status': 'active',
-            'created_at': parse_date(row['createdAt'])
+            'createdAt': parse_date(row['createdAt'])
         }
 
         insert_query = """
         INSERT INTO Companies (
             company_id, name, company_registration_number, location,
-            size, industry, description, status, created_at
+            size, industry, description, status, createdAt
         ) VALUES (
             %(company_id)s, %(name)s, %(company_registration_number)s, %(location)s,
-            %(size)s, %(industry)s, %(description)s, %(status)s, %(created_at)s
+            %(size)s, %(industry)s, %(description)s, %(status)s, %(createdAt)s
         )
         """
 
@@ -204,18 +204,18 @@ def insert_job(cursor, row, company_id):
         'experience_level': clean_value(row['experience'], default='경력 무관', allow_null=False),
         'deadline': deadline_date,  # 수정된 부분['deadline']) else None,
         'status': 'active',
-        'created_at': created_date
+        'createdAt': created_date
     }
 
     insert_query = """
     INSERT INTO Jobs (
         job_id, company_id, bookmark_id, title, description, requirements,
         salary, location, employment_type, experience_level, deadline,
-        status, created_at
+        status, createdAt
     ) VALUES (
         %(job_id)s, %(company_id)s, %(bookmark_id)s, %(title)s, %(description)s,
         %(requirements)s, %(salary)s, %(location)s, %(employment_type)s,
-        %(experience_level)s, %(deadline)s, %(status)s, %(created_at)s
+        %(experience_level)s, %(deadline)s, %(status)s, %(createdAt)s
     )
     """
 

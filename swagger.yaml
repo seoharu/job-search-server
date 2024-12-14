@@ -1,0 +1,913 @@
+openapi: 3.0.0
+info:
+  title: 구인구직 API
+  description: |
+    사람인 데이터 기반 구인구직 서비스 API 문서
+    
+    ## 주요 기능
+    - 회원 인증 (회원가입/로그인)
+    - 채용공고 검색 및 필터링
+    - 지원서 관리
+    - 북마크 관리
+    - 면접 관리
+    
+    ## 응답 형식
+    모든 API는 일관된 응답 형식을 사용합니다:
+    - 성공: { "status": "success", "data": {...} }
+    - 실패: { "status": "error", "message": "에러 메시지", "code": "에러 코드" }
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3200
+    description: 개발 서버
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [error]
+        message:
+          type: string
+        code:
+          type: string
+
+    SuccessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success]
+        data:
+          type: object
+        message:
+          type: string
+
+    User:
+      type: object
+      properties:
+        user_id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        phone:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive]
+        last_login_at:
+          type: string
+          format: date-time
+
+    Job:
+      type: object
+      properties:
+        job_id:
+          type: string
+        title:
+          type: string
+        company_id:
+          type: string
+        description:
+          type: string
+        requirements:
+          type: array
+          items:
+            type: string
+        location:
+          type: string
+        salary_min:
+          type: integer
+        salary_max:
+          type: integer
+        experience_level:
+          type: string
+        employment_type:
+          type: string
+        tech_stack:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [active, inactive]
+        views:
+          type: integer
+
+    Application:
+      type: object
+      properties:
+        application_id:
+          type: string
+        job_id:
+          type: string
+        user_id:
+          type: string
+        status:
+          type: string
+          enum: [pending, accepted, rejected]
+        resume_version:
+          type: string
+        cover_letter:
+          type: string
+        appliedAt:
+          type: string
+          format: date-time
+        reviewedAt:
+          type: string
+          format: date-time
+        reviewerComment:
+          type: string
+
+    Bookmark:
+      type: object
+      properties:
+        bookmark_id:
+          type: string
+        user_id:
+          type: string
+        job_id:
+          type: string
+        note:
+          type: string
+        notification:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    Interview:
+      type: object
+      properties:
+        interview_id:
+          type: string
+        company_id:
+          type: string
+        job_id:
+          type: string
+        user_id:
+          type: string
+        process:
+          type: string
+        question:
+          type: string
+        interview_date:
+          type: string
+          format: date-time
+        interview_type:
+          type: string
+        duration:
+          type: integer
+        status:
+          type: string
+          enum: [scheduled, completed, cancelled]
+        result:
+          type: string
+          enum: [pending, pass, fail]
+        difficulty:
+          type: integer
+          minimum: 1
+          maximum: 5
+        experience:
+          type: string
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - 인증
+      summary: 회원가입
+      description: |
+        새로운 사용자를 등록합니다.
+        - 이메일 형식을 검증합니다.
+        - 비밀번호는 Base64로 인코딩되어 저장됩니다.
+        - 이름은 필수입니다.
+        - 비밀번호는 최소 8자 이상이어야 합니다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - name
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                name:
+                  type: string
+                phone:
+                  type: string
+      responses:
+        '201':
+          description: 회원가입 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            $ref: '#/components/schemas/User'
+        '400':
+          description: |
+            잘못된 요청
+            - EMAIL_EXISTS: 이미 존재하는 이메일
+            - MISSING_FIELDS: 필수 필드 누락
+            - INVALID_PASSWORD: 비밀번호 형식 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      tags:
+        - 인증
+      summary: 로그인
+      description: |
+        이메일과 비밀번호로 로그인합니다.
+        - 계정 상태를 확인합니다.
+        - 로그인 성공 시 JWT 토큰이 발급됩니다.
+        - 마지막 로그인 시간이 업데이트됩니다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: 로그인 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          accessToken:
+                            type: string
+                          user:
+                            $ref: '#/components/schemas/User'
+        '401':
+          description: |
+            인증 실패
+            - USER_NOT_FOUND: 존재하지 않는 사용자
+            - INVALID_PASSWORD: 잘못된 비밀번호
+            - INACTIVE_ACCOUNT: 비활성화된 계정
+
+  /jobs:
+    get:
+      tags:
+        - 채용공고
+      summary: 채용공고 목록 조회
+      description: |
+        채용공고 목록을 조회합니다.
+        - 다양한 필터링 옵션을 제공합니다.
+        - 페이지네이션을 지원합니다.
+        - 정렬 기능을 제공합니다.
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: 검색어 (제목, 설명, 회사명)
+        - in: query
+          name: location
+          schema:
+            type: string
+          description: 지역 필터
+        - in: query
+          name: experience
+          schema:
+            type: string
+          description: 경력 요구사항
+        - in: query
+          name: salary_min
+          schema:
+            type: integer
+          description: 최소 연봉
+        - in: query
+          name: salary_max
+          schema:
+            type: integer
+          description: 최대 연봉
+        - in: query
+          name: employment_type
+          schema:
+            type: string
+          description: 고용 형태
+        - in: query
+          name: tech_stack
+          schema:
+            type: array
+            items:
+              type: string
+          description: 기술 스택
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: 페이지 번호
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+          description: 페이지당 항목 수
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            enum: [createdAt, deadline, views, salary_min, salary_max, title]
+            default: createdAt
+          description: 정렬 기준
+        - in: query
+          name: sortOrder
+          schema:
+            type: string
+            enum: [ASC, DESC]
+            default: DESC
+          description: 정렬 방향
+      responses:
+        '200':
+          description: 채용공고 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          jobs:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Job'
+                          pagination:
+                            type: object
+                            properties:
+                              currentPage:
+                                type: integer
+                              totalPages:
+                                type: integer
+                              totalItems:
+                                type: integer
+
+  /jobs/{id}:
+    get:
+      tags:
+        - 채용공고
+      summary: 채용공고 상세 조회
+      description: |
+        특정 채용공고의 상세 정보를 조회합니다.
+        - 조회 시 조회수가 증가합니다.
+        - 관련 채용공고 추천 기능을 포함합니다.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: 채용공고 ID
+      responses:
+        '200':
+          description: 채용공고 상세 조회 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          job:
+                            $ref: '#/components/schemas/Job'
+                          relatedJobs:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Job'
+        '404':
+          description: 존재하지 않는 채용공고
+
+  /applications:
+    post:
+      tags:
+        - 지원
+      summary: 채용공고 지원
+      description: |
+        채용공고에 지원합니다.
+        - 중복 지원은 불가능합니다.
+        - 이력서 버전과 자기소개서는 필수입니다.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - job_id
+                - resume_version
+              properties:
+                job_id:
+                  type: string
+                resume_version:
+                  type: string
+                cover_letter:
+                  type: string
+      responses:
+        '201':
+          description: 지원 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Application'
+        '400':
+          description: |
+            잘못된 요청
+            - MISSING_REQUIRED_FIELDS: 필수 항목 누락
+            - ALREADY_APPLIED: 이미 지원한 공고
+        '404':
+          description: 존재하지 않는 채용공고
+
+    get:
+      tags:
+        - 지원
+      summary: 내 지원 내역 조회
+      description: |
+        사용자의 지원 내역을 조회합니다.
+        - 상태별 필터링이 가능합니다.
+        - 페이지네이션을 지원합니다.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, accepted, rejected]
+          description: 지원 상태 필터
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: 페이지 번호
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: 페이지당 항목 수
+      responses:
+        '200':
+          description: 지원 내역 조회 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          applications:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Application'
+                          pagination:
+                            type: object
+                            properties:
+                              current_page:
+                                type: integer
+                              total_pages:
+                                type: integer
+                              total_items:
+                                type: integer
+
+  /applications/{application_id}:
+    delete:
+      tags:
+        - 지원
+      summary: 지원 취소
+      description: |
+        지원을 취소합니다.
+        - pending 상태의 지원만 취소 가능합니다.
+        - 취소된 지원은 rejected 상태로 변경됩니다.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: application_id
+          required: true
+          schema:
+            type: string
+          description: 지원서 ID
+      responses:
+        '200':
+          description: 지원 취소 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: |
+            잘못된 요청
+            - INVALID_CANCELLATION: 취소할 수 없는 상태
+
+  /bookmarks:
+    post:
+      tags:
+        - 북마크
+      summary: 북마크 추가/제거
+      description: |
+        채용공고에 대한 북마크를 토글합니다.
+        - 이미 북마크한 공고의 경우 제거됩니다.
+        - 북마크하지 않은 공고의 경우 추가됩니다.
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - job_id
+              properties:
+                job_id:
+                  type: string
+      responses:
+        '200':
+          description: 북마크 토글 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "북마크가 추가/제거되었습니다"
+        '400':
+          description: |
+            잘못된 요청
+            - JOB_ID_MISSING: 채용공고 ID 누락
+            - USER_ID_MISSING: 사용자 인증 필요
+
+    get:
+      tags:
+        - 북마크
+      summary: 내 북마크 목록 조회
+      description: |
+        사용자의 북마크 목록을 조회합니다.
+        - 페이지네이션을 지원합니다.
+        - 최신순으로 정렬됩니다.
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: 페이지 번호
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+          description: 페이지당 항목 수
+      responses:
+        '200':
+          description: 북마크 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          bookmarks:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Bookmark'
+                          pagination:
+                            type: object
+                            properties:
+                              current_page:
+                                type: integer
+                              total_pages:
+                                type: integer
+                              total_items:
+                                type: integer
+
+  /bookmarks/{id}:
+    get:
+      tags:
+        - 북마크
+      summary: 북마크 상태 확인
+      description: 특정 채용공고에 대한 북마크 상태를 확인합니다.
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: 채용공고 ID
+      responses:
+        '200':
+          description: 북마크 상태 확인 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          bookmarked:
+                            type: boolean
+                          bookmark_id:
+                            type: string
+                          note:
+                            type: string
+                          notification:
+                            type: boolean
+
+  /interviews:
+    post:
+      tags:
+        - 면접
+      summary: 면접 일정 생성
+      description: |
+        새로운 면접 일정을 생성합니다.
+        - 면접 날짜는 현재 시간 이후여야 합니다.
+        - 동일한 채용공고에 대해 중복 면접을 생성할 수 없습니다.
+        - duration은 분 단위로 입력합니다.
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - company_id
+                - job_id
+                - process
+                - interview_date
+                - interview_type
+              properties:
+                company_id:
+                  type: string
+                job_id:
+                  type: string
+                process:
+                  type: string
+                  description: 면접 단계
+                question:
+                  type: string
+                  description: 면접 관련 질문
+                interview_date:
+                  type: string
+                  format: date-time
+                interview_type:
+                  type: string
+                  description: 면접 형태 (대면/비대면)
+                duration:
+                  type: integer
+                  description: 면접 시간 (분)
+      responses:
+        '201':
+          description: 면접 일정 생성 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Interview'
+        '400':
+          description: |
+            잘못된 요청
+            - MISSING_REQUIRED_FIELDS: 필수 항목 누락
+            - INVALID_INTERVIEW_DATE: 잘못된 면접 날짜
+            - INTERVIEW_EXISTS: 이미 존재하는 면접
+            - INVALID_DURATION: 잘못된 면접 시간
+
+    get:
+      tags:
+        - 면접
+      summary: 내 면접 목록 조회
+      description: |
+        사용자의 면접 목록을 조회합니다.
+        - 상태 및 결과별 필터링이 가능합니다.
+        - 페이지네이션을 지원합니다.
+        - 면접 날짜순으로 정렬됩니다.
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [ scheduled, completed, cancelled ]
+          description: 면접 상태 필터
+        - in: query
+          name: result
+          schema:
+            type: string
+            enum: [ pending, pass, fail ]
+          description: 면접 결과 필터
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: 페이지 번호
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: 페이지당 항목 수
+      responses:
+        '200':
+          description: 면접 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          interviews:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Interview'
+                          pagination:
+                            type: object
+                            properties:
+                              current_page:
+                                type: integer
+                              total_pages:
+                                type: integer
+                              total_items:
+                                type: integer
+
+  /interviews/{interview_id}/result:
+    put:
+      tags:
+        - 면접
+      summary: 면접 결과 업데이트
+      description: |
+        완료된 면접의 결과와 경험을 업데이트합니다.
+        - 완료된 면접에 대해서만 결과를 입력할 수 있습니다.
+        - 난이도는 1-5 사이의 값으로 입력해야 합니다.
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - in: path
+          name: interview_id
+          required: true
+          schema:
+            type: string
+          description: 면접 ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                difficulty:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                result:
+                  type: string
+                  enum: [ pass, fail ]
+                experience:
+                  type: string
+      responses:
+        '200':
+          description: 면접 결과 업데이트 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Interview'
+        '400':
+          description: |
+            잘못된 요청
+            - INVALID_INTERVIEW_STATUS: 완료되지 않은 면접
+            - INVALID_DIFFICULTY: 잘못된 난이도 값
+        '404':
+          description: 존재하지 않는 면접
+
+  /interviews/{interview_id}/status:
+    put:
+      tags:
+        - 면접
+      summary: 면접 상태 업데이트
+      description: 면접의 상태를 업데이트합니다.
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - in: path
+          name: interview_id
+          required: true
+          schema:
+            type: string
+          description: 면접 ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [ scheduled, completed, cancelled ]
+      responses:
+        '200':
+          description: 면접 상태 업데이트 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Interview'
+        '404':
+          description: 존재하지 않는 면접

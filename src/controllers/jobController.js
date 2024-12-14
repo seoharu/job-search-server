@@ -1,93 +1,116 @@
-// controllers/job.controller.js
+const db = require('../models');
+const Job = db.Job;
 const { Op } = require('sequelize');
-const Job = require('../models/job');
 const logger = require('../utils/logger');
 
-// 채용 공고 목록 조회 (페이지네이션, 필터링, 검색, 정렬)
+// 성공 응답 처리
+const handleSuccess = (res, data) => {
+  res.status(200).json({
+    status: "success",
+    data: data
+  });
+};
+
+// 에러 응답 처리
+const handleError = (res, message, code) => {
+  logger.error(message);
+  res.status(500).json({
+    status: "error",
+    message: message,
+    code: code
+  });
+};
+
+// 공통 where 절 생성 로직
+const buildWhereClause = (query) => {
+  const { search, location, experience, salary_min, salary_max, employment_type, tech_stack } = query;
+  const whereClause = { status: 'active' }; // 활성화된 공고만 검색
+
+  // 키워드 검색 개선 (회사명 포함)
+  if (search) {
+    whereClause[Op.or] = [
+      { title: { [Op.like]: `%${search}%` } },
+      { description: { [Op.like]: `%${search}%` } },
+      { requirements: { [Op.like]: `%${search}%` } },
+      { '$Company.name$': { [Op.like]: `%${search}%` } }  // 회사명 검색 추가
+    ];
+  }
+
+  if (location) {
+    whereClause.location = { [Op.like]: `%${location}%` };
+  }
+
+  if (experience) {
+    whereClause.experience_level = { [Op.like]: `%${experience}%` };
+  }
+
+  // 급여 범위 검색 개선
+  if (salary_min) {
+    whereClause.salary_min = { [Op.gte]: parseInt(salary_min) };
+  }
+  if (salary_max) {
+    whereClause.salary_max = { [Op.lte]: parseInt(salary_max) };
+  }
+
+  if (employment_type) {
+    whereClause.employment_type = employment_type;
+  }
+
+  // 기술 스택 필터링 추가
+  if (tech_stack) {
+    const techStacks = Array.isArray(tech_stack) ? tech_stack : [tech_stack];
+    whereClause.tech_stack = {
+      [Op.overlap]: techStacks
+    };
+  }
+
+  return whereClause;
+};
+
+// 채용 공고 목록 조회
 const getJobs = async (req, res) => {
   try {
     const {
       page = 1,
       limit = 20,
-      search,
-      location,
-      experience,
-      salary,
-      techStack,
       sortBy = 'createdAt',
       sortOrder = 'DESC'
     } = req.query;
 
-    // 검색 및 필터링 조건 구성
-    const whereClause = {};
+    const whereClause = buildWhereClause(req.query);
 
-    if (search) {
-      whereClause[Op.or] = [
-        { title: { [Op.like]: `%${search}%` } },
-        { company: { [Op.like]: `%${search}%` } },
-        { position: { [Op.like]: `%${search}%` } }
-      ];
-    }
-
-    if (location) {
-      whereClause.location = location;
-    }
-
-    if (experience) {
-      whereClause.experience = experience;
-    }
-
-    if (salary) {
-      whereClause.salary = { [Op.gte]: salary };
-    }
-
-    if (techStack) {
-      whereClause.techStack = { [Op.like]: `%${techStack}%` };
-    }
-
-    // 페이지네이션 설정
-    const offset = (page - 1) * limit;
-
-    // 정렬 설정
-    const validSortFields = ['createdAt', 'salary', 'experience'];
-    const validSortOrder = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+    // 정렬 옵션
+    const validSortFields = ['createdAt', 'deadline', 'views',
+      'salary_min', 'salary_max', 'title'];
     const order = validSortFields.includes(sortBy)
-      ? [[sortBy, validSortOrder]]
+      ? [[sortBy, 'DESC']]
       : [['createdAt', 'DESC']];
 
-    // 데이터 조회
     const { count, rows: jobs } = await Job.findAndCountAll({
       where: whereClause,
       limit: parseInt(limit),
-      offset: parseInt(offset),
-      order
+      offset: (page - 1) * parseInt(limit),
+      order,
+      include: [
+        {
+          model: db.Company,
+          as: 'Company',  // 모델에서 정의한 as와 일치
+          attributes: ['name', 'location'],
+        },
+      ],
     });
 
-    // 페이지네이션 정보
-    const totalPages = Math.ceil(count / limit);
-
-    logger.info(`Jobs retrieved with filters: ${JSON.stringify(req.query)}`);
-
-    // 응답
-    res.json({
-      status: 'success',
-      data: {
-        jobs,
-        pagination: {
-          currentPage: parseInt(page),
-          totalPages,
-          totalItems: count,
-          itemsPerPage: parseInt(limit)
-        }
+    handleSuccess(res, {
+      jobs,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(count / parseInt(limit)),
+        totalItems: count
       }
     });
   } catch (error) {
-    logger.error('Error retrieving jobs:', error);
-    res.status(500).json({
-      status: 'error',
-      message: '채용 공고 목록 조회 중 오류가 발생했습니다',
-      code: 'JOBS_RETRIEVAL_ERROR'
-    });
+    console.error('채용 공고 목록 조회 중 오류가 발생했습니다:', error.message);
+
   }
 };
 
@@ -96,50 +119,52 @@ const getJobById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const job = await Job.findByPk(id);
+    const job = await Job.findByPk(id, {
+      include: [
+        {
+          model: db.Company,
+          attributes: ['name', 'location', 'size', 'industry'],
+        },
+      ],
+    });
+
     if (!job) {
-      return res.status(404).json({
-        status: 'error',
-        message: '채용 공고를 찾을 수 없습니다',
-        code: 'JOB_NOT_FOUND'
-      });
+      return res.error('채용 공고를 찾을 수 없습니다', 'JOB_NOT_FOUND', 404);
     }
 
     // 조회수 증가
-    await job.increment('viewCount');
+    await job.increment('views');
 
-    // 관련 공고 추천 (같은 기술스택 또는 같은 회사의 다른 공고)
+    // 관련 공고 추천
     const relatedJobs = await Job.findAll({
       where: {
-        id: { [Op.ne]: id },
+        job_id: { [Op.ne]: id },
+        status: 'active',
         [Op.or]: [
-          { company: job.company },
-          { techStack: { [Op.like]: `%${job.techStack}%` } }
-        ]
+          { company_id: job.company_id },
+          { experience_level: job.experience_level },
+        ],
       },
-      limit: 5
+      limit: 5,
+      include: [
+        {
+          model: db.Company,
+          as: 'Company',  // 모델에서 정의한 as와 일치
+          attributes: ['name', 'location'],
+        },
+      ],
     });
 
-    logger.info(`Job detail viewed: ${id}`);
-
-    res.json({
-      status: 'success',
-      data: {
-        job,
-        relatedJobs
-      }
+    res.success({
+      job,
+      relatedJobs,
     });
   } catch (error) {
-    logger.error('Error retrieving job detail:', error);
-    res.status(500).json({
-      status: 'error',
-      message: '채용 공고 상세 조회 중 오류가 발생했습니다',
-      code: 'JOB_DETAIL_ERROR'
-    });
+    handleError(res, '채용 공고 상세 조회 중 오류가 발생했습니다', 'JOB_DETAIL_ERROR', error);
   }
 };
 
 module.exports = {
   getJobs,
-  getJobById
+  getJobById,
 };

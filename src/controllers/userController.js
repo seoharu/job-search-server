@@ -1,4 +1,5 @@
-const { User } = require('../models');
+const db = require('../models');
+const User = db.User;  // users.js에서 정의된 모델을 가져옴
 const { generateAccessToken } = require('../utils/jwt');
 const logger = require('../utils/logger');
 
@@ -53,6 +54,7 @@ const login = async (req, res) => {
 
     // JWT 토큰 생성
     const accessToken = generateAccessToken(user);
+    console.log(accessToken);
 
     logger.info(`User logged in: ${email}`);
 
@@ -82,6 +84,7 @@ const login = async (req, res) => {
 const register = async (req, res) => {
   try {
     const { email, password, name, phone } = req.body;
+    console.log(email, password, name, phone)
 
     // 필수 입력값 검증
     if (!email || !password || !name) {
@@ -89,6 +92,15 @@ const register = async (req, res) => {
         status: 'error',
         message: '필수 항목을 모두 입력해주세요',
         code: 'MISSING_REQUIRED_FIELDS'
+      });
+    }
+
+    // 비밀번호 길이 검증 추가
+    if (password.length < 8) {  // 8자 이상으로 설정
+      return res.status(400).json({
+        status: 'error',
+        message: '비밀번호는 8자 이상이어야 합니다',
+        code: 'INVALID_PASSWORD'
       });
     }
 
@@ -158,7 +170,7 @@ const getMyProfile = async (req, res) => {
           name: user.name,
           phone: user.phone,
           resume: user.resume,
-          created_at: user.created_at,
+          createdAt: user.createdAt,
           last_login_at: user.last_login_at
         }
       }
