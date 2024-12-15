@@ -13,6 +13,7 @@ Backend server for job search platform using Express.js and MySQL.
 - Sequelize (ORM)
 - JWT Authentication
 - Swagger Documentation
+- JSDOC
 
 ## Requirements
 
@@ -24,4 +25,20 @@ Backend server for job search platform using Express.js and MySQL.
 
 1. Clone the repository
 ```bash
-git clone https://github.com/seoharu/job-search-server.git
+: git clone https://github.com/seoharu/job-search-server.git
+```
+
+2. **_Running the Server_**
+## JCloud Environment
+- Use the following command to start the server:
+npm run dev
+
+## Local Environment
+- Use the following command to start the server:
+node src/app.js
+
+# Additional Information
+Ensure that the MySQL database is running and properly configured.
+Modify the .env file to set up your database connection and other environment variables.
+
+
