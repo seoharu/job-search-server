@@ -18,8 +18,8 @@ info:
   version: 1.0.0
 
 servers:
-  - url: http://localhost:3200
-    description: 개발 서버
+  - url: http://113.198.66.75:13013
+    description: 배포 서버
 
 components:
   securitySchemes:
